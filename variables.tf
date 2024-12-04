@@ -26,3 +26,9 @@ variable "keypair_name" {
   type        = string
   description = "The name of the keypair"
 }
+
+variable "container_image" {
+  type        = string
+  description = "The container image"
+  default     = "ghcr.io/8xff/atm0s-media-server:master"
+}
