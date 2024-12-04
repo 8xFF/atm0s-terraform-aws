@@ -29,44 +29,54 @@ resource "aws_eip_association" "console_eip_association" {
   allocation_id = aws_eip.console_eip.id
 }
 
+resource "aws_cloudwatch_log_group" "log" {
+  name              = "/${var.ecs_cluster_name}/console-service"
+  retention_in_days = 7
+}
+
 resource "aws_ecs_task_definition" "ecs_task" {
   family                   = "8xff-console-task"
   network_mode             = "host"
   requires_compatibilities = ["EC2"]
   execution_role_arn       = var.ecs_execution_role_arn
-  container_definitions    = <<DEFINITION
-[
-  {
-    "name": "8xff-console",
-    "image": "${var.container_image}",
-    "cpu": 100,
-    "memory": 256,
-    "command": ["console"],
-    "environment": [
-      {
-        "name": "HTTP_PORT",
-        "value": "8080"
-      },
-      {
-        "name": "SDN_PORT",
-        "value": "10000"
-      },
-      {
-        "name": "SDN_ZONE_ID",
-        "value": "${var.zone_id}"
-      },
-      {
-        "name": "SDN_ZONE_NODE_ID",
-        "value": "0"
-      },
-      {
-        "name": "WORKER",
-        "value": "2"
+  container_definitions = jsonencode([
+    {
+      "name" : "8xff-console",
+      "image" : "${var.container_image}",
+      "cpu" : 100,
+      "memory" : 256,
+      "command" : ["console"],
+      "environment" : [
+        {
+          "name" : "HTTP_PORT",
+          "value" : "8080"
+        },
+        {
+          "name" : "SDN_PORT",
+          "value" : "10000"
+        },
+        {
+          "name" : "SDN_ZONE_ID",
+          "value" : tostring(var.zone_id)
+        },
+        {
+          "name" : "SDN_ZONE_NODE_ID",
+          "value" : "0"
+        },
+        {
+          "name" : "WORKER",
+          "value" : "2"
+        }
+      ]
+      "logConfiguration" : {
+        "logDriver" : "awslogs",
+        "options" : {
+          "awslogs-group" : "${aws_cloudwatch_log_group.log.name}",
+          "awslogs-region" : "${var.aws_region}",
+          "awslogs-stream-prefix" : "ecs"
+        }
       }
-    ]
-  }
-]
-DEFINITION
+  }])
   tags = {
     Name = "console-task"
   }

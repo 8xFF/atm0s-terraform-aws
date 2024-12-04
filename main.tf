@@ -13,9 +13,9 @@ provider "aws" {
   alias  = "singapore"
 }
 
-module "clusters" {
+module "main_cluster" {
   source                 = "./clusters"
-  zone_id                = 0
+  zone_id                = "0"
   env                    = var.env
   keypair_name           = var.keypair_name
   container_image        = var.container_image

@@ -58,3 +58,8 @@ variable "container_image" {
   type        = string
   description = "The container image"
 }
+
+variable "console_endpoint" {
+  type        = string
+  description = "The console endpoint"
+}

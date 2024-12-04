@@ -44,6 +44,10 @@ data "aws_ami" "amazon_linux_2" {
   owners = ["amazon"]
 }
 
+data "aws_region" "current" {}
+
+
+
 module "console_service" {
   source                 = "./modules/services/console"
   zone_id                = var.zone_id
@@ -51,10 +55,28 @@ module "console_service" {
   instance_type          = var.standard_instance_type
   container_image        = var.container_image
   ec2_ami                = data.aws_ami.amazon_linux_2.id
+  aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
   vpc_id                 = module.vpc.vpc_id
   subnet_id              = module.vpc.subnet_public_ids
   security_group_id      = module.vpc.public_security_group_id
   ec2_iam_profile        = module.iam.ecs_instance_role_profile
   ecs_execution_role_arn = module.iam.ecs_execution_role_arn
+}
+
+module "gateway_service" {
+  source                 = "./modules/services/gateway"
+  zone_id                = var.zone_id
+  keypair_name           = var.keypair_name
+  instance_type          = var.standard_instance_type
+  container_image        = var.container_image
+  ec2_ami                = data.aws_ami.amazon_linux_2.id
+  aws_region             = data.aws_region.current.name
+  ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
+  vpc_id                 = module.vpc.vpc_id
+  subnet_id              = module.vpc.subnet_public_ids
+  security_group_id      = module.vpc.public_security_group_id
+  ec2_iam_profile        = module.iam.ecs_instance_role_profile
+  ecs_execution_role_arn = module.iam.ecs_execution_role_arn
+  console_endpoint       = "http://${module.console_service.console_public_ip}:8080"
 }

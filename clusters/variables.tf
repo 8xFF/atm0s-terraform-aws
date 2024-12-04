@@ -4,7 +4,7 @@ variable "env" {
 }
 
 variable "zone_id" {
-  type        = number
+  type        = string
   description = "value of zone id"
 }
 
