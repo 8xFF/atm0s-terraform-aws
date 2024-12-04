@@ -32,3 +32,9 @@ variable "container_image" {
   description = "The container image"
   default     = "ghcr.io/8xff/atm0s-media-server:master"
 }
+
+variable "cluster_secret" {
+  type        = string
+  description = "The secret for the cluster"
+  default     = "insecure"
+}

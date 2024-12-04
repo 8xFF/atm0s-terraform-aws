@@ -27,3 +27,9 @@ variable "container_image" {
   type        = string
   description = "The container image"
 }
+
+variable "cluster_secret" {
+  type        = string
+  description = "The secret for the cluster"
+  default     = "insecure"
+}

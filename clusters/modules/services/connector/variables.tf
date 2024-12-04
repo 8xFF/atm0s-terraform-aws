@@ -59,6 +59,11 @@ variable "container_image" {
   description = "The container image"
 }
 
+variable "gateway_endpoint" {
+  type        = string
+  description = "The console endpoint"
+}
+
 variable "cluster_secret" {
   type        = string
   description = "The secret for the cluster"

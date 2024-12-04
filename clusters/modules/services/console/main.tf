@@ -66,6 +66,10 @@ resource "aws_ecs_task_definition" "ecs_task" {
         {
           "name" : "WORKER",
           "value" : "2"
+        },
+        {
+          "name" : "SECRET",
+          "value" : "${var.cluster_secret}"
         }
       ]
       "logConfiguration" : {
