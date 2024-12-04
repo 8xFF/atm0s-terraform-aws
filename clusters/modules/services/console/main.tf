@@ -53,7 +53,7 @@ resource "aws_ecs_task_definition" "ecs_task" {
       },
       {
         "name": "SDN_ZONE_ID",
-        "value": "0"
+        "value": "${var.zone_id}"
       },
       {
         "name": "SDN_ZONE_NODE_ID",

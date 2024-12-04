@@ -1,3 +1,8 @@
+variable "zone_id" {
+  type        = number
+  description = "value of zone id"
+}
+
 variable "vpc_id" {
   type        = string
   description = "The ID of VPC"

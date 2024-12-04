@@ -23,10 +23,3 @@ provider "registry.terraform.io/hashicorp/aws" {
     "zh:eb44b45a40f80a309dd5b0eb7d7fcb2cbfe588fe2f18b173ef5851346898a662",
   ]
 }
-
-provider "registry.terraform.io/hashicorp/template" {
-  version = "2.2.0"
-  hashes = [
-    "h1:xWKluidkXYimKN/ROzVEDGA2pe+v2MnKF1VUIdLyg3w=",
-  ]
-}
