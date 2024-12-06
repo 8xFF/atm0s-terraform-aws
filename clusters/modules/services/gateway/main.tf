@@ -14,6 +14,7 @@ resource "aws_instance" "gateway_instance" {
   user_data = templatefile("${path.cwd}/user_data.sh.tpl", {
     ecs_cluster_name = var.ecs_cluster_name,
     service_type     = "gateway"
+    start_id         = 1
   })
 }
 

@@ -14,6 +14,7 @@ resource "aws_instance" "media_instance" {
   user_data = templatefile("${path.cwd}/user_data.sh.tpl", {
     ecs_cluster_name = var.ecs_cluster_name,
     service_type     = "media"
+    start_id         = 100
   })
 }
 

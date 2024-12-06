@@ -59,7 +59,7 @@ module "console_service" {
   aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
   vpc_id                 = module.vpc.vpc_id
-  subnet_id              = module.vpc.subnet_public_ids
+  subnet_id              = module.vpc.subnet_public_ids[0]
   security_group_id      = module.vpc.public_security_group_id
   ec2_iam_profile        = module.iam.ecs_instance_role_profile
   ecs_execution_role_arn = module.iam.ecs_execution_role_arn
@@ -76,7 +76,7 @@ module "gateway_service" {
   aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
   vpc_id                 = module.vpc.vpc_id
-  subnet_id              = module.vpc.subnet_public_ids
+  subnet_id              = module.vpc.subnet_public_ids[0]
   security_group_id      = module.vpc.public_security_group_id
   ec2_iam_profile        = module.iam.ecs_instance_role_profile
   ecs_execution_role_arn = module.iam.ecs_execution_role_arn
@@ -94,7 +94,7 @@ module "connector_service" {
   aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
   vpc_id                 = module.vpc.vpc_id
-  subnet_id              = module.vpc.subnet_public_ids
+  subnet_id              = module.vpc.subnet_public_ids[0]
   security_group_id      = module.vpc.public_security_group_id
   ec2_iam_profile        = module.iam.ecs_instance_role_profile
   ecs_execution_role_arn = module.iam.ecs_execution_role_arn
@@ -112,7 +112,7 @@ module "media_service" {
   aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
   vpc_id                 = module.vpc.vpc_id
-  subnet_id              = module.vpc.subnet_public_ids
+  subnet_id              = module.vpc.subnet_public_ids[0]
   security_group_id      = module.vpc.public_security_group_id
   ec2_iam_profile        = module.iam.ecs_instance_role_profile
   ecs_execution_role_arn = module.iam.ecs_execution_role_arn

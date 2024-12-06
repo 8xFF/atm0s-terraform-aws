@@ -14,6 +14,7 @@ resource "aws_instance" "connector_instance" {
   user_data = templatefile("${path.cwd}/user_data.sh.tpl", {
     ecs_cluster_name = var.ecs_cluster_name,
     service_type     = "connector"
+    start_id         = 10
   })
 }
 
@@ -54,7 +55,7 @@ resource "aws_ecs_task_definition" "ecs_task" {
           },
           {
             "name" : "SDN_ZONE_NODE_ID",
-            "value" : "40"
+            "value" : "10"
           },
           {
             "name" : "SEEDS_FROM_URL",
