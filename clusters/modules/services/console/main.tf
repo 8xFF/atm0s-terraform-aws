@@ -71,6 +71,10 @@ resource "aws_ecs_task_definition" "ecs_task" {
         {
           "name" : "SECRET",
           "value" : "${var.cluster_secret}"
+        },
+        {
+          "name" : "NODE_IP_ALT_CLOUD",
+          "value" : "aws"
         }
       ]
       "logConfiguration" : {

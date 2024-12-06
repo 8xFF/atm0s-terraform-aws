@@ -15,6 +15,8 @@ Here is our architure in one region the cloud system.
 ```bash
 terraform init
 
+terraform plan
+
 terraform apply
 ```
 
