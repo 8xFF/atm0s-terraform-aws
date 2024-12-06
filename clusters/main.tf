@@ -118,3 +118,12 @@ module "media_service" {
   ecs_execution_role_arn = module.iam.ecs_execution_role_arn
   gateway_endpoint       = "http://${module.gateway_service.gateway_public_ip}:3000"
 }
+
+module "alb" {
+  source              = "./modules/alb"
+  env                 = var.env
+  vpc_id              = module.vpc.vpc_id
+  subnet_ids          = module.vpc.subnet_public_ids
+  security_group_id   = module.vpc.public_security_group_id
+  gateway_instance_id = module.gateway_service.gateway_instance_id
+}
