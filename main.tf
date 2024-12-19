@@ -21,6 +21,7 @@ module "main_cluster" {
   container_image        = var.container_image
   media_instance_type    = var.media_instance_type
   standard_instance_type = var.standard_instance_type
+  console_endpoint       = null
 
   providers = {
     aws = aws.singapore

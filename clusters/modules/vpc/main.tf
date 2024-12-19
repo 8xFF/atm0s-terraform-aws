@@ -13,23 +13,12 @@ resource "aws_vpc" "main" {
 resource "aws_subnet" "public_subnets" {
   count                   = 2
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index)
+  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 9, 1 + count.index)
   map_public_ip_on_launch = true
   availability_zone       = data.aws_availability_zones.available_zones.names[count.index]
 
   tags = {
     name = "public-subnet"
-  }
-}
-
-resource "aws_subnet" "private_subnets" {
-  count             = 2
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, 2 + count.index)
-  availability_zone = data.aws_availability_zones.available_zones.names[count.index]
-
-  tags = {
-    name = "private-subnet"
   }
 }
 

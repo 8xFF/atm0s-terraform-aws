@@ -1,35 +1,3 @@
-resource "aws_instance" "console_instance" {
-  ami             = var.ec2_ami
-  key_name        = var.keypair_name
-  instance_type   = var.instance_type
-  subnet_id       = var.subnet_id
-  security_groups = [var.security_group_id]
-  tags = {
-    Name         = "console-instance"
-    service-type = "console"
-  }
-
-  iam_instance_profile = var.ec2_iam_profile
-
-  user_data = templatefile("${path.cwd}/user_data.sh.tpl", {
-    ecs_cluster_name = var.ecs_cluster_name,
-    service_type     = "console"
-    start_id         = 0
-  })
-}
-
-resource "aws_eip" "console_eip" {
-  domain = "vpc"
-  tags = {
-    Name = "console-eip"
-  }
-}
-
-resource "aws_eip_association" "console_eip_association" {
-  instance_id   = aws_instance.console_instance.id
-  allocation_id = aws_eip.console_eip.id
-}
-
 resource "aws_cloudwatch_log_group" "log" {
   name              = "/${var.ecs_cluster_name}/console-service"
   retention_in_days = 7
@@ -46,11 +14,11 @@ resource "aws_ecs_task_definition" "ecs_task" {
       "image" : "${var.container_image}",
       "cpu" : 100,
       "memory" : 256,
-      "command" : ["console"],
+      "command" : ["--enable-interfaces", "eth0", "console"],
       "environment" : [
         {
           "name" : "HTTP_PORT",
-          "value" : "8080"
+          "value" : "80"
         },
         {
           "name" : "SDN_PORT",
@@ -61,8 +29,8 @@ resource "aws_ecs_task_definition" "ecs_task" {
           "value" : tostring(var.zone_id)
         },
         {
-          "name" : "SDN_ZONE_NODE_ID",
-          "value" : "0"
+          "name" : "SDN_ZONE_NODE_ID_FROM_IP_PREFIX",
+          "value" : "${var.subnet_cidr_prefix}"
         },
         {
           "name" : "WORKER",
@@ -75,6 +43,14 @@ resource "aws_ecs_task_definition" "ecs_task" {
         {
           "name" : "NODE_IP_ALT_CLOUD",
           "value" : "aws"
+        },
+        {
+          "name" : "ENABLE_PRIVATE_IP",
+          "value" : "true"
+        },
+        {
+          "name" : "ENABLE_INTERFACES",
+          "value" : "eth0"
         }
       ]
       "logConfiguration" : {
@@ -87,7 +63,8 @@ resource "aws_ecs_task_definition" "ecs_task" {
       }
   }])
   tags = {
-    Name = "console-task"
+    Name        = "console-task"
+    environment = var.env
   }
 }
 
@@ -104,6 +81,7 @@ resource "aws_ecs_service" "console_service" {
   }
 
   tags = {
-    Name = "console-service"
+    Name        = "console-service"
+    environment = var.env
   }
 }

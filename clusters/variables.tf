@@ -33,3 +33,9 @@ variable "cluster_secret" {
   description = "The secret for the cluster"
   default     = "insecure"
 }
+
+variable "console_endpoint" {
+  type        = string
+  description = "The console endpoint"
+  nullable    = true
+}

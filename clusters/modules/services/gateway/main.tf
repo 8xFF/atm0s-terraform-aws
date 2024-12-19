@@ -1,35 +1,3 @@
-resource "aws_instance" "gateway_instance" {
-  ami             = var.ec2_ami
-  key_name        = var.keypair_name
-  instance_type   = var.instance_type
-  subnet_id       = var.subnet_id
-  security_groups = [var.security_group_id]
-  tags = {
-    Name         = "gateway-instance"
-    service-type = "gateway"
-  }
-
-  iam_instance_profile = var.ec2_iam_profile
-
-  user_data = templatefile("${path.cwd}/user_data.sh.tpl", {
-    ecs_cluster_name = var.ecs_cluster_name,
-    service_type     = "gateway"
-    start_id         = 1
-  })
-}
-
-resource "aws_eip" "gateway_eip" {
-  domain = "vpc"
-  tags = {
-    Name = "gateway-eip"
-  }
-}
-
-resource "aws_eip_association" "gateway_eip_association" {
-  instance_id   = aws_instance.gateway_instance.id
-  allocation_id = aws_eip.gateway_eip.id
-}
-
 resource "aws_cloudwatch_log_group" "log" {
   name              = "/${var.ecs_cluster_name}/gateway-service"
   retention_in_days = 7
@@ -51,7 +19,7 @@ resource "aws_ecs_task_definition" "ecs_task" {
         "environment" : [
           {
             "name" : "HTTP_PORT",
-            "value" : "3000"
+            "value" : "80"
           },
           {
             "name" : "SDN_PORT",
@@ -62,12 +30,12 @@ resource "aws_ecs_task_definition" "ecs_task" {
             "value" : "${var.zone_id}"
           },
           {
-            "name" : "SDN_ZONE_NODE_ID",
-            "value" : "1"
+            "name" : "SDN_ZONE_NODE_ID_FROM_IP_PREFIX",
+            "value" : "${var.subnet_cidr_prefix}"
           },
           {
             "name" : "SEEDS_FROM_URL",
-            "value" : "${var.console_endpoint}/api/cluster/seeds?zone_id=0&node_type=Gateway"
+            "value" : "http://${var.console_endpoint}/api/cluster/seeds?zone_id=0&node_type=Gateway"
           },
           {
             "name" : "WORKER",
@@ -80,6 +48,14 @@ resource "aws_ecs_task_definition" "ecs_task" {
           {
             "name" : "NODE_IP_ALT_CLOUD",
             "value" : "aws"
+          },
+          {
+            "name" : "ENABLE_PRIVATE_IP",
+            "value" : "true"
+          },
+          {
+            "name" : "ENABLE_INTERFACES",
+            "value" : "eth0"
           }
         ]
         "logConfiguration" : {
@@ -94,7 +70,8 @@ resource "aws_ecs_task_definition" "ecs_task" {
     ]
   )
   tags = {
-    Name = "gateway-task"
+    Name        = "gateway-task"
+    environment = var.env
   }
 }
 
@@ -112,6 +89,7 @@ resource "aws_ecs_service" "gateway_service" {
   }
 
   tags = {
-    Name = "gateway-service"
+    Name        = "gateway-service"
+    environment = var.env
   }
 }
