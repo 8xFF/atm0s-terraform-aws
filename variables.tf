@@ -4,12 +4,6 @@ variable "env" {
   default     = "dev"
 }
 
-variable "vpc_cidr_block" {
-  type        = string
-  description = "The VPC's CIDR block"
-  default     = "10.0.0.0/16"
-}
-
 variable "standard_instance_type" {
   type        = string
   description = "The standard instance type"

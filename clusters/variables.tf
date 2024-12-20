@@ -3,6 +3,21 @@ variable "env" {
   description = "Current state of project: dev, prod, stage..."
 }
 
+variable "ecs_instance_role_profile" {
+  type        = string
+  description = "The role profile"
+}
+
+variable "ecs_execution_role_arn" {
+  type        = string
+  description = "The execution role arn"
+}
+
+variable "cidr_block" {
+  type        = string
+  description = "Cidr block for vpc"
+}
+
 variable "zone_id" {
   type        = string
   description = "value of zone id"
@@ -38,4 +53,10 @@ variable "console_endpoint" {
   type        = string
   description = "The console endpoint"
   nullable    = true
+}
+
+variable "is_primary_cluster" {
+  type        = bool
+  description = "Is this the primary cluster"
+  default     = false
 }

@@ -1,3 +1,13 @@
+terraform {
+  required_version = ">= 1.9.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.78.0"
+    }
+  }
+}
+
 data "aws_iam_policy" "ecs_instance_role_policy" {
   arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
