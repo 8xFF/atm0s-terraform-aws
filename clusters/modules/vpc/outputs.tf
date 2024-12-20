@@ -8,9 +8,12 @@ output "subnet_public_ids" {
   description = "The IDs of public subnets"
 }
 
-output "subnet_private_ids" {
-  value       = aws_subnet.private_subnets.*.id
-  description = "The IDs of private subnets"
+output "subnet_public_first_three_octets" {
+  value = [
+    for subnet in aws_subnet.public_subnets :
+    join(".", slice(split(".", subnet.cidr_block), 0, 3))
+  ]
+  description = "The CIDR blocks of public subnets"
 }
 
 output "public_security_group_id" {

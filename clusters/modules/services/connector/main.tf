@@ -1,35 +1,3 @@
-resource "aws_instance" "connector_instance" {
-  ami             = var.ec2_ami
-  key_name        = var.keypair_name
-  instance_type   = var.instance_type
-  subnet_id       = var.subnet_id
-  security_groups = [var.security_group_id]
-  tags = {
-    Name         = "connector-instance"
-    service-type = "connector"
-  }
-
-  iam_instance_profile = var.ec2_iam_profile
-
-  user_data = templatefile("${path.cwd}/user_data.sh.tpl", {
-    ecs_cluster_name = var.ecs_cluster_name,
-    service_type     = "connector"
-    start_id         = 10
-  })
-}
-
-resource "aws_eip" "connector_eip" {
-  domain = "vpc"
-  tags = {
-    Name = "connector-eip"
-  }
-}
-
-resource "aws_eip_association" "connector_eip_association" {
-  instance_id   = aws_instance.connector_instance.id
-  allocation_id = aws_eip.connector_eip.id
-}
-
 resource "aws_cloudwatch_log_group" "log" {
   name              = "/${var.ecs_cluster_name}/connector-service"
   retention_in_days = 7
@@ -54,12 +22,12 @@ resource "aws_ecs_task_definition" "ecs_task" {
             "value" : "${var.zone_id}"
           },
           {
-            "name" : "SDN_ZONE_NODE_ID",
-            "value" : "10"
+            "name" : "SDN_ZONE_NODE_ID_FROM_IP_PREFIX",
+            "value" : "${var.subnet_cidr_prefix}"
           },
           {
             "name" : "SEEDS_FROM_URL",
-            "value" : "${var.gateway_endpoint}/api/node/address"
+            "value" : "http://${var.gateway_endpoint}/api/node/address"
           },
           {
             "name" : "WORKER",
@@ -72,6 +40,14 @@ resource "aws_ecs_task_definition" "ecs_task" {
           {
             "name" : "NODE_IP_ALT_CLOUD",
             "value" : "aws"
+          },
+          {
+            "name" : "ENABLE_PRIVATE_IP",
+            "value" : "true"
+          },
+          {
+            "name" : "ENABLE_INTERFACES",
+            "value" : "eth0"
           }
         ]
         "logConfiguration" : {
@@ -86,7 +62,8 @@ resource "aws_ecs_task_definition" "ecs_task" {
     ]
   )
   tags = {
-    Name = "connector-task"
+    Name        = "connector-task"
+    environment = var.env
   }
 }
 

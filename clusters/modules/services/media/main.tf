@@ -1,34 +1,23 @@
-resource "aws_instance" "media_instance" {
-  ami             = var.ec2_ami
-  key_name        = var.keypair_name
-  instance_type   = var.instance_type
-  subnet_id       = var.subnet_id
-  security_groups = [var.security_group_id]
-  tags = {
-    Name         = "media-instance"
-    service-type = "media"
-  }
+resource "aws_ecs_capacity_provider" "ecs_capacity_provider" {
+  name = "capacity_provider"
 
-  iam_instance_profile = var.ec2_iam_profile
+  auto_scaling_group_provider {
+    auto_scaling_group_arn         = var.autoscale_group_arn
+    managed_termination_protection = "ENABLED"
 
-  user_data = templatefile("${path.cwd}/user_data.sh.tpl", {
-    ecs_cluster_name = var.ecs_cluster_name,
-    service_type     = "media"
-    start_id         = 100
-  })
-}
-
-resource "aws_eip" "media_eip" {
-  domain = "vpc"
-  tags = {
-    Name = "media-eip"
+    managed_scaling {
+      minimum_scaling_step_size = 1
+      status                    = "ENABLED"
+      target_capacity           = 100
+    }
   }
 }
 
-resource "aws_eip_association" "media_eip_association" {
-  instance_id   = aws_instance.media_instance.id
-  allocation_id = aws_eip.media_eip.id
+resource "aws_ecs_cluster_capacity_providers" "ecs_cluster_capacity_provider" {
+  cluster_name       = var.ecs_cluster_name
+  capacity_providers = [aws_ecs_capacity_provider.ecs_capacity_provider.name]
 }
+
 
 resource "aws_cloudwatch_log_group" "log" {
   name              = "/${var.ecs_cluster_name}/media-service"
@@ -54,12 +43,12 @@ resource "aws_ecs_task_definition" "ecs_task" {
             "value" : "${var.zone_id}"
           },
           {
-            "name" : "SDN_ZONE_NODE_ID",
-            "value" : "100"
+            "name" : "SDN_ZONE_NODE_ID_FROM_IP_PREFIX",
+            "value" : "${var.subnet_cidr_prefix}"
           },
           {
             "name" : "SEEDS_FROM_URL",
-            "value" : "${var.gateway_endpoint}/api/node/address"
+            "value" : "http://${var.gateway_endpoint}/api/node/address"
           },
           {
             "name" : "WORKER",
@@ -72,6 +61,14 @@ resource "aws_ecs_task_definition" "ecs_task" {
           {
             "name" : "NODE_IP_ALT_CLOUD",
             "value" : "aws"
+          },
+          {
+            "name" : "ENABLE_PRIVATE_IP",
+            "value" : "true"
+          },
+          {
+            "name" : "ENABLE_INTERFACES",
+            "value" : "eth0"
           }
         ]
         "logConfiguration" : {
@@ -96,7 +93,9 @@ resource "aws_ecs_service" "media_service" {
   cluster         = var.ecs_cluster_name
   task_definition = aws_ecs_task_definition.ecs_task.arn
   desired_count   = 1
-  launch_type     = "EC2"
+
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 100
 
   placement_constraints {
     type       = "memberOf"
@@ -104,6 +103,55 @@ resource "aws_ecs_service" "media_service" {
   }
 
   tags = {
-    Name = "media-service"
+    Name        = "media-service"
+    environment = var.env
   }
+
+  capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.ecs_capacity_provider.name
+    weight            = 100
+  }
+}
+
+
+resource "aws_appautoscaling_target" "media_scale_target" {
+  max_capacity       = 3
+  min_capacity       = 1
+  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.media_service.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "ecs_policy_memory" {
+  name               = "media-memory-autoscaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.media_scale_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.media_scale_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.media_scale_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+
+    target_value = 80
+  }
+}
+
+resource "aws_appautoscaling_policy" "ecs_policy_cpu" {
+  name               = "media-memory-autoscaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.media_scale_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.media_scale_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.media_scale_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    target_value = 80
+  }
+
+  depends_on = [aws_appautoscaling_policy.ecs_policy_memory]
 }

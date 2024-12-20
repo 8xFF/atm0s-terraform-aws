@@ -7,16 +7,10 @@ terraform {
   }
 }
 
-
-module "iam" {
-  source = "./modules/iam"
-  env    = var.env
-}
-
 module "vpc" {
   source     = "./modules/vpc"
   env        = var.env
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.cidr_block
 }
 
 resource "aws_ecs_cluster" "ecs_cluster" {
@@ -46,84 +40,77 @@ data "aws_ami" "amazon_linux_2" {
 
 data "aws_region" "current" {}
 
-
-
-module "console_service" {
-  source                 = "./modules/services/console"
-  zone_id                = var.zone_id
+module "ec2" {
+  source                 = "./modules/ec2"
+  env                    = var.env
   keypair_name           = var.keypair_name
-  instance_type          = var.standard_instance_type
-  container_image        = var.container_image
-  cluster_secret         = var.cluster_secret
+  standard_instance_type = var.standard_instance_type
+  media_instance_type    = var.media_instance_type
+  is_primary_cluster     = var.is_primary_cluster
+  ec2_iam_profile        = var.ecs_instance_role_profile
   ec2_ami                = data.aws_ami.amazon_linux_2.id
   aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
   vpc_id                 = module.vpc.vpc_id
-  subnet_id              = module.vpc.subnet_public_ids[0]
+  subnet_ids             = module.vpc.subnet_public_ids
   security_group_id      = module.vpc.public_security_group_id
-  ec2_iam_profile        = module.iam.ecs_instance_role_profile
-  ecs_execution_role_arn = module.iam.ecs_execution_role_arn
+}
+
+module "console_service" {
+  source                 = "./modules/services/console"
+  env                    = var.env
+  zone_id                = var.zone_id
+  cluster_secret         = var.cluster_secret
+  container_image        = var.container_image
+  ecs_execution_role_arn = var.ecs_execution_role_arn
+  aws_region             = data.aws_region.current.name
+  ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
+  subnet_cidr_prefix     = module.vpc.subnet_public_first_three_octets[0]
 }
 
 module "gateway_service" {
   source                 = "./modules/services/gateway"
+  env                    = var.env
   zone_id                = var.zone_id
-  keypair_name           = var.keypair_name
-  instance_type          = var.standard_instance_type
   container_image        = var.container_image
   cluster_secret         = var.cluster_secret
-  ec2_ami                = data.aws_ami.amazon_linux_2.id
+  ecs_execution_role_arn = var.ecs_execution_role_arn
   aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
-  vpc_id                 = module.vpc.vpc_id
-  subnet_id              = module.vpc.subnet_public_ids[0]
-  security_group_id      = module.vpc.public_security_group_id
-  ec2_iam_profile        = module.iam.ecs_instance_role_profile
-  ecs_execution_role_arn = module.iam.ecs_execution_role_arn
-  console_endpoint       = "http://${module.console_service.console_public_ip}:8080"
+  console_endpoint       = var.console_endpoint == null && var.is_primary_cluster ? module.ec2.console_public_dns : var.console_endpoint
+  subnet_cidr_prefix     = module.vpc.subnet_public_first_three_octets[0]
+
+  depends_on = [module.console_service]
 }
+
 
 module "connector_service" {
   source                 = "./modules/services/connector"
+  env                    = var.env
   zone_id                = var.zone_id
-  keypair_name           = var.keypair_name
-  instance_type          = var.standard_instance_type
   container_image        = var.container_image
   cluster_secret         = var.cluster_secret
-  ec2_ami                = data.aws_ami.amazon_linux_2.id
+  ecs_execution_role_arn = var.ecs_execution_role_arn
   aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
-  vpc_id                 = module.vpc.vpc_id
-  subnet_id              = module.vpc.subnet_public_ids[0]
-  security_group_id      = module.vpc.public_security_group_id
-  ec2_iam_profile        = module.iam.ecs_instance_role_profile
-  ecs_execution_role_arn = module.iam.ecs_execution_role_arn
-  gateway_endpoint       = "http://${module.gateway_service.gateway_public_ip}:3000"
+  gateway_endpoint       = module.ec2.gateway_public_dns
+  subnet_cidr_prefix     = module.vpc.subnet_public_first_three_octets[0]
+
+  depends_on = [module.gateway_service]
 }
 
 module "media_service" {
   source                 = "./modules/services/media"
+  env                    = var.env
   zone_id                = var.zone_id
-  keypair_name           = var.keypair_name
-  instance_type          = var.media_instance_type
   container_image        = var.container_image
   cluster_secret         = var.cluster_secret
-  ec2_ami                = data.aws_ami.amazon_linux_2.id
+  ecs_execution_role_arn = var.ecs_execution_role_arn
   aws_region             = data.aws_region.current.name
   ecs_cluster_name       = aws_ecs_cluster.ecs_cluster.name
-  vpc_id                 = module.vpc.vpc_id
-  subnet_id              = module.vpc.subnet_public_ids[0]
-  security_group_id      = module.vpc.public_security_group_id
-  ec2_iam_profile        = module.iam.ecs_instance_role_profile
-  ecs_execution_role_arn = module.iam.ecs_execution_role_arn
-  gateway_endpoint       = "http://${module.gateway_service.gateway_public_ip}:3000"
-}
+  gateway_endpoint       = module.ec2.gateway_public_dns
+  autoscale_group_arn    = module.ec2.media_autoscale_group_arn
+  subnet_cidr_prefix     = module.vpc.subnet_public_first_three_octets[0]
 
-module "alb" {
-  source              = "./modules/alb"
-  env                 = var.env
-  vpc_id              = module.vpc.vpc_id
-  subnet_ids          = module.vpc.subnet_public_ids
-  security_group_id   = module.vpc.public_security_group_id
-  gateway_instance_id = module.gateway_service.gateway_instance_id
+  depends_on = [module.gateway_service]
 }

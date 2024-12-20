@@ -31,9 +31,9 @@ terraform apply
   - [ ] sip gateway service
   - [ ] cloud panel
   - [ ] rds
-  - [ ] autoscale
+  - [x] autoscale
   - [ ] s3
 
-- [ ] multi region
-  - [ ] primary region
-  - [ ] sub region
+- [x] multi region
+  - [x] primary region
+  - [x] sub region
