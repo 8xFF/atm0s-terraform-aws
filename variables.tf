@@ -31,4 +31,5 @@ variable "cluster_secret" {
   type        = string
   description = "The secret for the cluster"
   default     = "insecure"
+  sensitive   = true
 }
