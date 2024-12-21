@@ -35,6 +35,7 @@ module "main_cluster" {
   container_image           = var.container_image
   media_instance_type       = var.media_instance_type
   standard_instance_type    = var.standard_instance_type
+  cluster_secret            = var.cluster_secret
   cidr_block                = "10.0.0.0/16"
   console_endpoint          = null
   is_primary_cluster        = true
@@ -55,6 +56,7 @@ module "sub_cluster_1" {
   container_image           = var.container_image
   media_instance_type       = var.media_instance_type
   standard_instance_type    = var.standard_instance_type
+  cluster_secret            = var.cluster_secret
   cidr_block                = "10.1.0.0/16"
   console_endpoint          = module.main_cluster.console_domain
   is_primary_cluster        = false
